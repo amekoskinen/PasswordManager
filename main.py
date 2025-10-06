@@ -2,6 +2,7 @@ import tkinter
 from tkinter import PhotoImage, END, messagebox
 import random
 import pyperclip
+import json
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 def generate_password():
 
@@ -25,16 +26,44 @@ def save_data():
     website = entry_website.get()
     email = entry_email.get()
     password = entry_password.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": password
+        }
+    }
     if password == "" or website =="":
         messagebox.showerror(title="Oops", message="Please don't leave any fields empty!")
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"These are the information you entered\nEmail: {email} and password:{password}\nDo you want to save the information?")
-        if is_ok:
-            add_text=f"{website} | {email} | {password}\n"
-            with open("data.txt","a") as pwd_file:
-                pwd_file.write(add_text)
+        try:
+            with open("data.json","r") as pwd_file:
+                data = json.load(pwd_file)
+                data.update(new_data)
+        except FileNotFoundError:
+            with open("data.json","w") as pwd_file:
+                json.dump(new_data, pwd_file, indent=4)
+        else:
+
+            with open("data.json", "w") as pwd_file:
+                json.dump(data, pwd_file, indent=4)
+        finally:
             entry_website.delete(0,END)
             entry_password.delete(0,END)
+# ---------------------------- SEARCH---------------------------------- #
+def find_password():
+    website = entry_website.get()
+    try:
+        with open("data.json","r") as pwd_file:
+            data = json.load(pwd_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="File not found", message="No Data File Found")
+    else:
+        if website in data:
+            information = data[website]
+            messagebox.showinfo(title="Username and Email",
+                                message=f"Username: {information["email"]}\nPassword: {information["password"]}")
+        else:
+            messagebox.showinfo(title="Website not found", message=f"No details for the website {website} exists")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -54,23 +83,25 @@ label_email.grid(column=0, row=2)
 label_password = tkinter.Label(text="Password:")
 label_password.grid(column=0, row=3)
 
-entry_website = tkinter.Entry(width=45)
-entry_website.grid(column=1, row=1, columnspan=2, pady=5)
+entry_website = tkinter.Entry(width=32)
+entry_website.grid(column=1, row=1, pady=5)
 entry_website.focus()
 
-entry_email = tkinter.Entry(width=45)
-entry_email.grid(column=1, row=2, columnspan=2, pady=5)
+entry_email = tkinter.Entry(width=32)
+entry_email.grid(column=1, row=2,  pady=5)
 entry_email.insert(0,"myemail@email.com")
 
-entry_password = tkinter.Entry(width=26)
+entry_password = tkinter.Entry(width=32)
 entry_password.grid(column=1, row=3, pady=5)
 
 generate_button = tkinter.Button(text="Generate Password", width=15, command=generate_password)
 generate_button.grid(column=2, row=3)
 
-add_button = tkinter.Button(text="Add", width=40, command=save_data)
+add_button = tkinter.Button(text="Add", width=47, command=save_data)
 add_button.grid(column=1, row=4, columnspan=2, pady=5)
 
+search_button = tkinter.Button(text="Search", width=15, bg="light blue", fg="black", font=("arial",10,"normal"), highlightthickness=0, command=find_password)
+search_button.grid(column=2, row=1)
 
 
 window.mainloop()
